@@ -1,0 +1,65 @@
+# Compila o tesla_auth para Windows e publica uma Release com o .zip.
+# Corre sozinho quando este ficheiro muda em main, ou à mão em
+# Actions → "Build Windows" → Run workflow.
+# A versão (tag) vem do Cargo.toml (ex.: 0.16.0 → v0.16.0).
+name: Build Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/build-windows.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build x86_64-pc-windows-msvc
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --release --locked
+
+      - name: Smoke test
+        shell: pwsh
+        run: ./target/release/tesla_auth.exe --version
+
+      - name: Package
+        id: package
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+          $zip = "tesla_auth-x86_64-pc-windows-msvc.zip"
+          New-Item -ItemType Directory dist | Out-Null
+          Copy-Item target/release/tesla_auth.exe, LICENSE, README.md, LEIA-ME-PT.md, CHANGELOG.md dist/
+          Compress-Archive -Path dist/* -DestinationPath $zip
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          "$hash  $zip" | Out-File -Encoding ascii "$zip.sha256"
+          "tag=v$version" >> $env:GITHUB_OUTPUT
+          "zip=$zip" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tesla_auth-windows
+          path: tesla_auth-x86_64-pc-windows-msvc.zip*
+
+      - name: Publish release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.package.outputs.tag }}
+          ZIP: ${{ steps.package.outputs.zip }}
+        run: |
+          gh release view $env:TAG 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:TAG $env:ZIP "$env:ZIP.sha256" --clobber
+          } else {
+            gh release create $env:TAG $env:ZIP "$env:ZIP.sha256" --target $env:GITHUB_SHA --title $env:TAG `
+              --notes "Versão revista do tesla_auth: dependências de segurança atualizadas, sessão privada por defeito, tokens fora do terminal, só navegação https e botões Copy. Ver CHANGELOG.md e LEIA-ME-PT.md."
+          }
+          exit 0
