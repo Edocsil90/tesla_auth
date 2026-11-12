@@ -1,7 +1,7 @@
 # Tesla Auth
 
 [![CI](https://github.com/Edocsil90/tesla_auth/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Edocsil90/tesla_auth/actions/workflows/ci.yml)
-[![CD](https://github.com/Edocsil90/tesla_auth/actions/workflows/release.yml/badge.svg)](https://github.com/Edocsil90/tesla_auth/actions/workflows/release.yml)
+[![Build Windows](https://github.com/Edocsil90/tesla_auth/actions/workflows/build-windows.yml/badge.svg?branch=main)](https://github.com/Edocsil90/tesla_auth/actions/workflows/build-windows.yml)
 
 Securely generate API tokens for third-party access to your Tesla.
 
