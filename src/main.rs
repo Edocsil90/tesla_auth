@@ -1,3 +1,8 @@
+// Double-clicking the .exe must not open an empty console window next to the
+// login window. Started from a terminal, it attaches to that terminal instead
+// (see `attach_parent_console`), so --help, --version and --print still work.
+#![cfg_attr(windows, windows_subsystem = "windows")]
+
 use std::thread;
 
 use log::LevelFilter;
@@ -56,6 +61,9 @@ struct Args {
 }
 
 fn main() -> anyhow::Result<()> {
+    #[cfg(windows)]
+    attach_parent_console();
+
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     disable_dmabuf_renderer();
 
@@ -144,6 +152,26 @@ fn main() -> anyhow::Result<()> {
             log::error!("Failed to render page: {e}");
         }
     });
+}
+
+/// With the GUI subsystem a run from cmd/PowerShell has no console of its own;
+/// borrow the parent's so `println!` output is visible there. Fails silently
+/// when started by double-click (there is no parent console), which is the
+/// point.
+#[cfg(windows)]
+fn attach_parent_console() {
+    const ATTACH_PARENT_PROCESS: u32 = u32::MAX;
+
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn AttachConsole(process_id: u32) -> i32;
+    }
+
+    // SAFETY: AttachConsole takes a plain integer and only changes which console
+    // this process uses; a failure is reported through the return value.
+    unsafe {
+        AttachConsole(ATTACH_PARENT_PROCESS);
+    }
 }
 
 /// Opts out of WebKitGTK's DMA-BUF renderer.

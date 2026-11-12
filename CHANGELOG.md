@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.16.2] - 2026-11-12
+
+- Windows: no more empty console window when the app is started by double-click; run from a terminal it still prints to that terminal (`--help`, `--version`, `--print`)
+
 ## [0.16.1] - 2026-11-12
 
 - Add an app icon: embedded in the Windows executable (Explorer, taskbar) and set as the window icon on every platform

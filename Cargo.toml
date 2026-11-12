@@ -1,6 +1,6 @@
 [package]
 name = "tesla_auth"
-version = "0.16.1"
+version = "0.16.2"
 description = "Tesla token generator"
 homepage = "https://github.com/Edocsil90/tesla_auth"
 repository = "https://github.com/Edocsil90/tesla_auth"
