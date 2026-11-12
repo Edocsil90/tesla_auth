@@ -74,6 +74,7 @@ fn main() -> anyhow::Result<()> {
 
     let window = WindowBuilder::new()
         .with_title("Tesla Auth")
+        .with_window_icon(window_icon())
         .with_resizable(true)
         .build(&event_loop)?;
 
@@ -162,6 +163,12 @@ fn disable_dmabuf_renderer() {
         // which brings up GTK and with it threads that read the environment.
         unsafe { std::env::set_var(VAR, "1") };
     }
+}
+
+/// Title bar / taskbar icon: 64×64 RGBA generated from `assets/icon-1024.png`.
+fn window_icon() -> Option<tao::window::Icon> {
+    const RGBA: &[u8] = include_bytes!("../assets/icon-64.rgba");
+    tao::window::Icon::from_rgba(RGBA.to_vec(), 64, 64).ok()
 }
 
 fn init_logger(debug: bool) -> anyhow::Result<()> {

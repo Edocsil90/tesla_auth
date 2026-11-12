@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-11-12
+
+- Add an app icon: embedded in the Windows executable (Explorer, taskbar) and set as the window icon on every platform
+
 ## [0.16.0] - 2026-11-12
 
 - Security: update `rustls` (0.23.46), `rustls-webpki` (0.103.17), `webpki-roots` (1.0.12), `quinn-proto` (0.11.19) and `tokio` (1.54.1), fixing RUSTSEC-2026-0285, -0338 to -0342, -0346, -0348, -0349, -0381, -0382 and -0386
