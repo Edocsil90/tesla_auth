@@ -36,9 +36,19 @@ struct Args {
     #[argh(switch, short = 'd')]
     debug: bool,
 
-    /// clear browsing data at startup
+    /// clear browsing data at startup (only matters with --keep-session)
     #[argh(switch, short = 'c')]
     clear_browsing_data: bool,
+
+    /// reuse the browser session of earlier runs; by default every run starts
+    /// in a private session that is thrown away when the window closes
+    #[argh(switch, short = 'k')]
+    keep_session: bool,
+
+    /// also print the tokens to the terminal; off by default so they do not
+    /// end up in terminal scrollback or captured logs
+    #[argh(switch, short = 'p')]
+    print: bool,
 
     /// print the version and exit
     #[argh(switch, short = 'v')]
@@ -72,7 +82,7 @@ fn main() -> anyhow::Result<()> {
     let _menu_bar = build_menu_bar(&window)?;
 
     let nav_proxy = event_loop.create_proxy();
-    let webview = build_webview(&window, args.debug, move |uri| {
+    let webview = build_webview(&window, args.debug, !args.keep_session, move |uri| {
         handle_navigation(&nav_proxy, uri)
     })?;
 
@@ -87,6 +97,7 @@ fn main() -> anyhow::Result<()> {
     // Taken by the first callback: `authenticate` consumes the client.
     let mut auth_client = Some(auth_client);
     let event_proxy = event_loop.create_proxy();
+    let print_tokens = args.print;
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -108,7 +119,9 @@ fn main() -> anyhow::Result<()> {
             }
 
             Event::UserEvent(UserEvent::Tokens(tokens)) => {
-                println!("{tokens}");
+                if print_tokens {
+                    println!("{tokens}");
+                }
                 view::tokens(&tokens)
             }
 
@@ -238,11 +251,15 @@ fn build_menu_bar(window: &Window) -> anyhow::Result<Menu> {
 fn build_webview(
     window: &Window,
     devtools: bool,
+    incognito: bool,
     navigation_handler: impl Fn(String) -> bool + 'static,
 ) -> anyhow::Result<WebView> {
+    // Incognito keeps Tesla's session cookies off the disk: nobody who later uses
+    // this machine can reopen the app and land in an already signed-in session.
     let builder = WebViewBuilder::new()
         .with_navigation_handler(navigation_handler)
         .with_clipboard(true)
+        .with_incognito(incognito)
         .with_devtools(devtools);
 
     #[cfg(any(target_os = "windows", target_os = "macos"))]
@@ -277,14 +294,26 @@ fn handle_navigation(event_proxy: &EventLoopProxy<UserEvent>, uri: String) -> bo
         return true;
     };
 
-    if !auth::is_redirect_url(&url) {
-        // Everything past the path is redacted: it carries the CSRF state.
-        log::debug!("Navigating to {} ...", &url[..Position::AfterPath]);
-        return true;
+    if auth::is_redirect_url(&url) {
+        let _ = event_proxy.send_event(UserEvent::Redirect(url));
+        return false;
     }
 
-    let _ = event_proxy.send_event(UserEvent::Redirect(url));
-    false
+    if !is_allowed_scheme(&url) {
+        // Plain http, file:, javascript: and custom schemes have no business in
+        // a login flow; following them could leak data or launch other apps.
+        log::warn!("Blocked navigation to a {}: URL", url.scheme());
+        return false;
+    }
+
+    // Everything past the path is redacted: it carries the CSRF state.
+    log::debug!("Navigating to {} ...", &url[..Position::AfterPath]);
+    true
+}
+
+/// Schemes the login flow (Tesla's pages and the embedded captchas) needs.
+fn is_allowed_scheme(url: &Url) -> bool {
+    matches!(url.scheme(), "https" | "about" | "data" | "blob")
 }
 
 /// Exchanges the authorization code on a background thread; the request blocks
@@ -311,4 +340,24 @@ fn spawn_token_exchange(
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn allows_only_the_schemes_the_login_flow_needs() {
+        let allowed = |uri: &str| is_allowed_scheme(&Url::parse(uri).unwrap());
+
+        assert!(allowed("https://auth.tesla.com/oauth2/v3/authorize"));
+        assert!(allowed("about:blank"));
+        assert!(allowed("data:text/html,hello"));
+        assert!(allowed("blob:https://auth.tesla.com/1234"));
+
+        assert!(!allowed("http://auth.tesla.com/"));
+        assert!(!allowed("file:///etc/passwd"));
+        assert!(!allowed("javascript:alert(1)"));
+        assert!(!allowed("ms-settings:privacy"));
+    }
 }

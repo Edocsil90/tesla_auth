@@ -56,6 +56,18 @@ p { margin: 0; text-align: center; }
 p.muted { color: var(--muted); }
 p.danger { color: var(--danger); }
 p.success { color: var(--success); font-size: 14px; }
+.label { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+button {
+  padding: 6px 14px;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover { border-color: var(--muted); }
 textarea {
   width: 100%;
   height: 12em;
@@ -77,14 +89,34 @@ pub fn progress() -> String {
     )
 }
 
+/// Copies a token without the user having to select it by hand. `execCommand`
+/// rather than the async clipboard API, which needs a secure context the
+/// `load_html` page does not have on every platform.
+const COPY_SCRIPT: &str = "\
+function copyToken(id, button) {
+  var field = document.getElementById(id);
+  field.focus();
+  field.select();
+  var copied = false;
+  try { copied = document.execCommand('copy'); } catch (e) {}
+  button.textContent = copied ? 'Copied \u{2713}' : 'Press Ctrl+C';
+  setTimeout(function () { button.textContent = 'Copy'; }, 2000);
+}
+";
+
 pub fn tokens(tokens: &Tokens) -> String {
     page(&format!(
         "<h1>Tesla API Tokens</h1>\
-         <h2>Access Token</h2>\
-         <textarea readonly onclick=\"this.select()\">{access}</textarea>\
-         <h2>Refresh Token</h2>\
-         <textarea readonly onclick=\"this.select()\">{refresh}</textarea>\
-         <p class=\"success\">Valid for {expires_in}</p>",
+         <div class=\"label\"><h2>Access Token</h2>\
+         <button type=\"button\" onclick=\"copyToken('access', this)\">Copy</button></div>\
+         <textarea id=\"access\" readonly onclick=\"this.select()\">{access}</textarea>\
+         <div class=\"label\"><h2>Refresh Token</h2>\
+         <button type=\"button\" onclick=\"copyToken('refresh', this)\">Copy</button></div>\
+         <textarea id=\"refresh\" readonly onclick=\"this.select()\">{refresh}</textarea>\
+         <p class=\"success\">Valid for {expires_in}</p>\
+         <p class=\"muted\">Treat the refresh token like a password: anyone holding it can use \
+         your Tesla account. Changing your Tesla password revokes it.</p>\
+         <script>{COPY_SCRIPT}</script>",
         access = escape(tokens.access.secret()),
         refresh = escape(tokens.refresh.secret()),
         expires_in = escape(&tokens.expires_in.to_string()),

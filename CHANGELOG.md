@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-11-12
+
+- Security: update `rustls` (0.23.46), `rustls-webpki` (0.103.17), `webpki-roots` (1.0.12), `quinn-proto` (0.11.19) and `tokio` (1.54.1), fixing RUSTSEC-2026-0285, -0338 to -0342, -0346, -0348, -0349, -0381, -0382 and -0386
+- Start every run in a private (incognito) browser session so Tesla's session cookies are not kept on disk; `--keep-session` restores the old behaviour
+- Stop printing the tokens to the terminal by default; `--print` turns it back on (the fallback when the window is closed mid-exchange is kept)
+- Block navigations to schemes the login flow never needs (`http:`, `file:`, `javascript:`, custom app schemes)
+- Add Copy buttons to the token page and a reminder to treat the refresh token like a password
+- CI: add a RustSec security audit job
+
 ## [0.15.0] - 2026-08-10
 
 - Disable WebKitGTK's DMA-BUF renderer by default on Linux, which fixes blank windows and immediate crashes on affected drivers (`WEBKIT_DISABLE_DMABUF_RENDERER=0` restores it)

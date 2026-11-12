@@ -17,14 +17,21 @@ Supports MFA and Captcha through Tesla's native login flow.
 
 ```plain
 ❯ tesla_auth --help
-Usage: tesla_auth [-d] [-c] [-v]
+Usage: tesla_auth [-d] [-c] [-k] [-p] [-v]
 
 Tesla API tokens generator
 
 Options:
   -d, --debug       print debug output
   -c, --clear-browsing-data
-                    clear browsing data at startup
+                    clear browsing data at startup (only matters with
+                    --keep-session)
+  -k, --keep-session
+                    reuse the browser session of earlier runs; by default every
+                    run starts in a private session that is thrown away when the
+                    window closes
+  -p, --print       also print the tokens to the terminal; off by default so
+                    they do not end up in terminal scrollback or captured logs
   -v, --version     print the version and exit
   --help, help      display usage information
 ```
@@ -33,7 +40,7 @@ Options:
 
 1. Run the `tesla_auth` executable (either by double-clicking it or directly in a terminal)
 2. Enter your Tesla account credentials (and MFA code if necessary)
-3. You'll get a final window where you can select and copy the access token and refresh token
+3. You'll get a final window where you can copy the access token and refresh token with the **Copy** buttons
 
 ## Platform-specific dependencies
 
