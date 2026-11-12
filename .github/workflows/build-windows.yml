@@ -62,4 +62,4 @@ jobs:
             gh release create $env:TAG $env:ZIP "$env:ZIP.sha256" --target $env:GITHUB_SHA --title $env:TAG `
               --notes "Versão revista do tesla_auth: dependências de segurança atualizadas, sessão privada por defeito, tokens fora do terminal, só navegação https e botões Copy. Ver CHANGELOG.md e LEIA-ME-PT.md."
           }
-          exit 0
+          exit $LASTEXITCODE
