@@ -47,6 +47,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: rustsec/audit-check@v2.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo install cargo-audit --locked
+      # Fails on vulnerabilities; unmaintained/unsound crates are reported as
+      # warnings (the GTK3 stack behind tao/wry on Linux has a few).
+      - run: cargo audit

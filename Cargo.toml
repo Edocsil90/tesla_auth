@@ -2,8 +2,8 @@
 name = "tesla_auth"
 version = "0.16.0"
 description = "Tesla token generator"
-homepage = "https://github.com/edocsil90/tesla_auth"
-repository = "https://github.com/edocsil90/tesla_auth"
+homepage = "https://github.com/Edocsil90/tesla_auth"
+repository = "https://github.com/Edocsil90/tesla_auth"
 keywords = ["tesla-api", "oauth2", "webview", "cli"]
 categories = ["command-line-utilities"]
 authors = ["Adrian Kumpf"]
